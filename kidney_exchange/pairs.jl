@@ -19,20 +19,22 @@ Donor(id::Int, dist::BloodTypeDist) = Donor(id, rand(dist))
 
 """
 ```
-Patient(id::Int, blood_type::BloodType)
+Patient(id::Int, blood_type::BloodType, PRA::Float64)
 ```
 """
 type Patient <: Person
     id::Int
     blood_type::BloodType
+    PRA::Float64
 end
 
 """
 ```
-Patient(id::Int, dist::BloodTypeDist)
+Patient(id::Int, b_dist::BloodTypeDist, t_dist::PRADist)
 ```
 """
-Patient(id::Int, dist::BloodTypeDist) = Patient(id, rand(dist))
+Patient(id::Int, b_dist::BloodTypeDist, t_dist::PRADist) = Patient(id, rand(b_dist), rand(t_dist))
+
 
 """
 ```
@@ -42,7 +44,7 @@ are_compatible(donor::Donor, patient::Patient)
 Returns `true` if `donor` can donate a kidney to `patient`.
 """
 function are_compatible(donor::Donor, patient::Patient)
-    res = if donor.blood_type == O
+    blood_compatible = if donor.blood_type == O
         true
     elseif donor.blood_type == A
         patient.blood_type in [A, AB]
@@ -51,7 +53,8 @@ function are_compatible(donor::Donor, patient::Patient)
     elseif donor.blood_type == AB
         patient.blood_type == AB
     end
-    return res
+
+    return blood_compatible
 end
 
 abstract Pair
@@ -73,17 +76,17 @@ end
 
 """
 ```
-IncompatiblePair(donor_id::Int, patient_id::Int, dist::BloodTypeDist)
+IncompatiblePair(donor_id::Int, patient_id::Int, b_dist::BloodTypeDist, t_dist::PRADist)
 ```
 """
-function IncompatiblePair(donor_id::Int, patient_id::Int, dist::BloodTypeDist)
-    donor   = Donor(donor_id, dist)
-    patient = Patient(patient_id, dist)
-    compatible = are_compatible(donor, patient)
+function IncompatiblePair(donor_id::Int, patient_id::Int, b_dist::BloodTypeDist, t_dist::PRADist)
+    donor   = Donor(donor_id, b_dist)
+    patient = Patient(patient_id, b_dist, t_dist)
+    compatible = are_compatible(donor, patient) && rand() > patient.PRA
     while compatible
-        donor   = Donor(donor_id, dist)
-        patient = Patient(patient_id, dist)
-        compatible = are_compatible(donor, patient)
+        donor   = Donor(donor_id, b_dist)
+        patient = Patient(patient_id, b_dist, t_dist)
+        compatible = are_compatible(donor, patient) && rand() > patient.PRA
     end
     return IncompatiblePair(donor, patient)
 end

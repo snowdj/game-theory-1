@@ -62,3 +62,35 @@ function Distributions.rand(dist::BloodTypeDist)
         return O
     end
 end
+
+"""
+```
+PRADist(γ_high::Float64, γ_low::Float64, p_low::Float64)
+```
+"""
+type PRADist <: DiscreteUnivariateDistribution
+    γ_high::Float64
+    γ_low::Float64
+    p_low::Float64
+
+    function PRADist(γ_high::Float64, γ_low::Float64, p_low::Float64)
+        @assert 0 <= γ_high <= 1
+        @assert 0 <= γ_low <= 1
+        @assert 0 <= p_low <= 1
+        return new(γ_high, γ_low, p_low)
+    end
+end
+
+"""
+```
+rand(dist::PRADist)
+```
+"""
+function Distributions.rand(dist::PRADist)
+    x = rand()
+    if x < dist.p_low
+        return dist.γ_low
+    else
+        return dist.γ_high
+    end
+end

@@ -6,7 +6,7 @@ module KidneyExchange
 
     export
         # blood_types.jl
-        BloodType, BloodTypeDist,
+        BloodType, BloodTypeDist, PRADist,
 
         # pairs.jl
         Person, Patient, Donor, are_compatible,

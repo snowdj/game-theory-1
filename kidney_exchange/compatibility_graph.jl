@@ -54,17 +54,19 @@ end
 
 """
 ```
-CompatibilityGraph(dist::BloodTypeDist, n_vertices::Int)
+CompatibilityGraph(b_dist::BloodTypeDist, t_dist::PRADist, n_vertices::Int)
 ```
 
 Initialize a random `Compatibility Graph`, where there are `n_vertices`
-incompatible pairs, all drawn from blood type distribution `dist`.
+incompatible pairs. All participants' blood types are drawn from blood type
+distribution `b_dist`, while patients' PRAs are drawn from tissue type
+distribution `t_dist`.
 """
-function CompatibilityGraph(dist::BloodTypeDist, n_vertices::Int)
+function CompatibilityGraph(b_dist::BloodTypeDist, t_dist::PRADist, n_vertices::Int)
     # Initialize vertices
     vertices = Vector{IncompatiblePair}(n_vertices)
     for i = 1:n_vertices
-        vertices[i] = IncompatiblePair(i, i, dist)
+        vertices[i] = IncompatiblePair(i, i, b_dist, t_dist)
     end
 
     # Initialize graph without edges
