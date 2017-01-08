@@ -17,6 +17,10 @@ Donor(id::Int, dist::BloodTypeDist)
 """
 Donor(id::Int, dist::BloodTypeDist) = Donor(id, rand(dist))
 
+function Base.show(io::IO, donor::Donor)
+    print(io, "Donor $(donor.id): type $(donor.blood_type)")
+end
+
 """
 ```
 Patient(id::Int, blood_type::BloodType, PRA::Float64)
@@ -35,6 +39,9 @@ Patient(id::Int, b_dist::BloodTypeDist, t_dist::PRADist)
 """
 Patient(id::Int, b_dist::BloodTypeDist, t_dist::PRADist) = Patient(id, rand(b_dist), rand(t_dist))
 
+function Base.show(io::IO, patient::Patient)
+    print(io, "Patient $(patient.id): type $(patient.blood_type) PRA $(patient.PRA)")
+end
 
 """
 ```
@@ -92,10 +99,7 @@ function IncompatiblePair(donor_id::Int, patient_id::Int, b_dist::BloodTypeDist,
 end
 
 function Base.show(io::IO, pair::IncompatiblePair)
-    donor   = pair.donor
-    patient = pair.patient
-    print(io, "\n(Donor $(donor.id) = $(donor.blood_type), ")
-    print(io, "Patient $(patient.id) = $(patient.blood_type))")
+    print(io, "\n($(pair.donor), $(pair.patient))")
 end
 
 """
@@ -116,8 +120,5 @@ type CompatiblePair <: Pair
 end
 
 function Base.show(io::IO, pair::CompatiblePair)
-    donor   = pair.donor
-    patient = pair.patient
-    print(io, "\nDonor $(donor.id) = $(donor.blood_type) -> ")
-    print(io, "Patient $(patient.id) = $(patient.blood_type)")
+    print(io, "\n$(pair.donor) => $(pair.patient)")
 end
