@@ -1,9 +1,11 @@
-immutable Man <: Agent
+abstract OneToOneAgent <: Agent
+
+immutable Man <: OneToOneAgent
     id::Int
     prefs::Vector{Int}
 end
 
-immutable Woman <: Agent
+immutable Woman <: OneToOneAgent
     id::Int
     prefs::Vector{Int}
 end

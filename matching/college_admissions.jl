@@ -1,9 +1,11 @@
-immutable Student <: Agent
+abstract ManyToOneAgent <: Agent
+
+immutable Student <: ManyToOneAgent
     id::Int
     prefs::Vector{Int}
 end
 
-immutable College <: Agent
+immutable College <: ManyToOneAgent
     id::Int
     prefs::Vector{Int}
     capacity::Int
@@ -63,7 +65,7 @@ function unmatch!(μ::ManyToOneMatching, c::College, s::Student)
 end
 unmatch!(μ::ManyToOneMatching, s::Student, c::College) = unmatch!(μ, c, s)
 
-type ManyToOneGame{A<:Agent} <: Game
+type ManyToOneGame{A<:ManyToOneAgent} <: Game
     round::Int
     students::OrderedDict{Int, Student}
     colleges::OrderedDict{Int, College}
@@ -71,9 +73,9 @@ type ManyToOneGame{A<:Agent} <: Game
     next_proposals::OrderedDict{A, Int}
 end
 
-function Base.rand{A<:Agent}(::Type{ManyToOneGame{A}},
-                             n_students::Int, n_colleges::Int,
-                             capacity::Int)
+function Base.rand{A<:ManyToOneAgent}(::Type{ManyToOneGame{A}},
+                                      n_students::Int, n_colleges::Int,
+                                      capacity::Int)
 
     students = OrderedDict{Int, Student}()
     for i = 1:n_students
@@ -97,7 +99,8 @@ function Base.rand{A<:Agent}(::Type{ManyToOneGame{A}},
     return ManyToOneGame(0, students, colleges, matches, next_proposals)
 end
 
-function propose!{A<:Agent}(g::ManyToOneGame{A}, p::Agent, q::Agent)
+function propose!{A<:ManyToOneAgent, B<:ManyToOneAgent}(g::ManyToOneGame{A},
+                                                        p::A, q::B)
     print(" * " * string(p) * " proposes to " * string(q) * "... ")
     @assert typeof(p) != typeof(q) (string(p) * " and " * string(q) * " cannot be of the same type")
 
@@ -137,7 +140,7 @@ function propose!{A<:Agent}(g::ManyToOneGame{A}, p::Agent, q::Agent)
     end
 end
 
-function iterate!{A<:Agent}(g::ManyToOneGame{A})
+function iterate!{A<:ManyToOneAgent}(g::ManyToOneGame{A})
     g.round += 1
     println("Start of round " * string(g.round) * ":")
     μ = g.matches
@@ -183,7 +186,7 @@ function can_propose(s::College, g::ManyToOneGame{College})
     return g.next_proposals[s] <= n_students
 end
 
-function isdone{A<:Agent}(g::ManyToOneGame{A})
+function isdone{A<:ManyToOneAgent}(g::ManyToOneGame{A})
     μ = g.matches
     if A == Student
         proposers = g.students
