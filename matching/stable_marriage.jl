@@ -39,6 +39,7 @@ end
 
 function match!(μ::OneToOneMatching, m::Man, w::Woman)
     @assert !ismatched(m, μ) (string(m) * " is already matched")
+    @assert !ismatched(w, μ) (string(w) * " is already matched")
     μ.d[m] = w
 end
 

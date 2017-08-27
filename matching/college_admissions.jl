@@ -52,6 +52,7 @@ getleastpref(c::College, μ::ManyToOneMatching) = last(μ.d[c])
 
 function match!(μ::ManyToOneMatching, c::College, s::Student)
     @assert !ismatched(c, μ) (string(c) * " is already full")
+    @assert !ismatched(s, μ) (string(s) * " is already matched")
     if !haskey(μ.d, c)
         μ.d[c] = SortedSet{Student, PrefOrdering{College}}(PrefOrdering{College}(c))
     end
