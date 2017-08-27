@@ -27,7 +27,7 @@ function Base.string(μ::ManyToOneMatching)
     return "{" * join(id_pairs, ", ") * "}"
 end
 
-function isfull(c::College, μ::ManyToOneMatching)
+function ismatched(c::College, μ::ManyToOneMatching)
     return c in keys(μ.d) && length(μ.d[c]) == c.capacity
 end
 ismatched(s::Student, μ::ManyToOneMatching) = any(ss -> s in ss, values(μ.d))
@@ -49,28 +49,31 @@ end
 getleastpref(c::College, μ::ManyToOneMatching) = last(μ.d[c])
 
 function match!(μ::ManyToOneMatching, c::College, s::Student)
-    @assert !isfull(c, μ) (string(c) * " is already full")
+    @assert !ismatched(c, μ) (string(c) * " is already full")
     if !haskey(μ.d, c)
         μ.d[c] = SortedSet{Student, PrefOrdering{College}}(PrefOrdering{College}(c))
     end
     insert!(μ.d[c], s)
 end
+match!(μ::ManyToOneMatching, s::Student, c::College) = match!(μ, c, s)
 
 function unmatch!(μ::ManyToOneMatching, c::College, s::Student)
     @assert s in getmatch(c, μ) (string(c) * " and " * string(s) * " are not currently matched")
     delete!(μ.d[c], s)
 end
+unmatch!(μ::ManyToOneMatching, s::Student, c::College) = unmatch!(μ, c, s)
 
-type ManyToOneGame <: Game
+type ManyToOneGame{A<:Agent} <: Game
     round::Int
     students::OrderedDict{Int, Student}
     colleges::OrderedDict{Int, College}
     matches::ManyToOneMatching
-    next_proposals::OrderedDict{Student, Int}
+    next_proposals::OrderedDict{A, Int}
 end
 
-function Base.rand(::Type{ManyToOneGame}, n_students::Int, n_colleges::Int,
-                   capacity::Int)
+function Base.rand{A<:Agent}(::Type{ManyToOneGame{A}},
+                             n_students::Int, n_colleges::Int,
+                             capacity::Int)
 
     students = OrderedDict{Int, Student}()
     for i = 1:n_students
@@ -83,57 +86,85 @@ function Base.rand(::Type{ManyToOneGame}, n_students::Int, n_colleges::Int,
     end
 
     matches = ManyToOneMatching()
-    next_proposals = OrderedDict(s => 1 for s in values(students))
+
+    if A == Student
+        proposers = values(students)
+    elseif A == College
+        proposers = values(colleges)
+    end
+    next_proposals = OrderedDict{A, Int}(p => 1 for p in proposers)
 
     return ManyToOneGame(0, students, colleges, matches, next_proposals)
 end
 
-function propose!(g::ManyToOneGame, s::Student, c::College)
-    print(" * " * string(s) * " proposes to " * string(c) * "... ")
-    μ = g.matches
-    @assert !ismatched(s, μ) (string(s) * " is already matched")
-    @assert s.prefs[g.next_proposals[s]] == c.id (string(c) * " is not " * string(s) * "'s most-preferred remaining college")
-    g.next_proposals[s] += 1
+function propose!{A<:Agent}(g::ManyToOneGame{A}, p::Agent, q::Agent)
+    print(" * " * string(p) * " proposes to " * string(q) * "... ")
+    @assert typeof(p) != typeof(q) (string(p) * " and " * string(q) * " cannot be of the same type")
 
-    if isfull(c, μ)
-        s_old = getleastpref(c, μ)
-        if prefers(c, s, s_old)
-            # College prefers new student
-            unmatch!(μ, c, s_old)
-            match!(μ, c, s)
-            println("it accepts, discarding " * string(s_old))
+    if A == Student
+        proposee_string = "college"
+        pronoun_string = "it"
+        leastmatch = getleastpref
+    elseif A == College
+        proposee_string = "student"
+        pronoun_string = "she"
+        leastmatch = getmatch
+    end
+
+    μ = g.matches
+    @assert !ismatched(p, μ) (string(p) * " is already matched")
+    @assert p.prefs[g.next_proposals[p]] == q.id (string(q) * " is not " * string(p) * "'s most-preferred remaining " * proposee_string)
+    g.next_proposals[p] += 1
+
+    if ismatched(q, μ)
+        p_old = leastmatch(q, μ)
+        if prefers(q, p, p_old)
+            # Proposee prefers new proposer
+            unmatch!(μ, p_old, q)
+            match!(μ, p, q)
+            println(pronoun_string * " accepts, discarding " * string(p_old))
             return true
         else
-            # College prefers least-preferred student in existing match
-            println("it rejects, remaining with " * string(s_old))
+            # Proposee prefers existing match(es)
+            println(pronoun_string * " rejects, remaining with " * string(p_old))
             return false
         end
     else
-        # College accepts student
-        match!(μ, c, s)
-        println("it accepts")
+        # Proposee accepts proposal
+        match!(μ, p, q)
+        println(pronoun_string * " accepts")
         return true
     end
 end
 
-function iterate!(g::ManyToOneGame)
+function iterate!{A<:Agent}(g::ManyToOneGame{A})
     g.round += 1
     println("Start of round " * string(g.round) * ":")
     μ = g.matches
 
-    unmatched_students = filter(s -> !ismatched(s, μ), values(g.students))
-    for s in unmatched_students
-        if can_propose(s, g)
-            c_id = s.prefs[g.next_proposals[s]]
-            c = g.colleges[c_id]
-            propose!(g, s, c)
+    if A == Student
+        proposers = g.students
+        proposees = g.colleges
+        proposee_string = "colleges"
+    elseif A == College
+        proposers = g.colleges
+        proposees = g.students
+        proposee_string = "students"
+    end
+
+    unmatched_proposers = filter(p -> !ismatched(p, μ), values(proposers))
+    for p in unmatched_proposers
+        if can_propose(p, g)
+            q_id = p.prefs[g.next_proposals[p]]
+            q = proposees[q_id]
+            propose!(g, p, q)
         else
-            println(" * " * string(s) * " has no more colleges to propose to")
+            println(" * " * string(p) * " has no more " * proposee_string * " to propose to")
         end
     end
 
     unmatched_students = collect(filter(s -> !ismatched(s, μ), values(g.students)))
-    open_colleges = collect(filter(c -> !isfull(c, μ), values(g.colleges)))
+    open_colleges = collect(filter(c -> !ismatched(c, μ), values(g.colleges)))
 
     println("End of round " * string(g.round) * ":")
     println(" * Matches: " * string(g.matches))
@@ -142,18 +173,28 @@ function iterate!(g::ManyToOneGame)
     println()
 end
 
-function can_propose(s::Student, g::ManyToOneGame)
+function can_propose(s::Student, g::ManyToOneGame{Student})
     n_colleges = length(g.colleges)
     return g.next_proposals[s] <= n_colleges
 end
 
-function isdone(g::ManyToOneGame)
+function can_propose(s::College, g::ManyToOneGame{College})
+    n_students = length(g.students)
+    return g.next_proposals[s] <= n_students
+end
+
+function isdone{A<:Agent}(g::ManyToOneGame{A})
     μ = g.matches
+    if A == Student
+        proposers = g.students
+    elseif A == College
+        proposers = g.colleges
+    end
 
-    all_matched = all(s -> ismatched(s, μ), values(g.students))
+    all_matched = all(p -> ismatched(p, μ), values(proposers))
 
-    unmatched_students = filter(s -> !ismatched(s, μ), values(g.students))
-    no_proposals = all(s -> !can_propose(s, g), unmatched_students)
+    unmatched_proposers = filter(p -> !ismatched(p, μ), values(proposers))
+    no_proposals = all(p -> !can_propose(p, g), unmatched_proposers)
 
     return all_matched || no_proposals
 end
