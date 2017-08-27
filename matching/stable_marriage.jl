@@ -36,12 +36,12 @@ function getmatch(w::Woman, μ::OneToOneMatching)
 end
 
 function match!(μ::OneToOneMatching, m::Man, w::Woman)
-    @assert !ismatched(m, μ) "Man is already matched"
+    @assert !ismatched(m, μ) (string(m) * " is already matched")
     μ.d[m] = w
 end
 
 function unmatch!(μ::OneToOneMatching, m::Man, w::Woman)
-    @assert getmatch(m, μ) == w "Man and woman are not currently matched"
+    @assert getmatch(m, μ) == w (string(m) * " and " * string(w) * " are not currently matched")
     delete!(μ.d, m)
 end
 
@@ -71,7 +71,7 @@ function Base.rand(::Type{OneToOneGame}, n_men::Int, n_women::Int)
 end
 
 function propose!(g::OneToOneGame, m::Man, w::Woman)
-    print(" * Man " * string(m.id) * " proposes to Woman " * string(w.id) * "... ")
+    print(" * " * string(m) * " proposes to " * string(w) * "... ")
     μ = g.matches
     @assert !ismatched(m, μ)
     @assert m.prefs[g.next_proposals[m]] == w.id
@@ -83,11 +83,11 @@ function propose!(g::OneToOneGame, m::Man, w::Woman)
             # Woman prefers new suitor
             unmatch!(μ, m_old, w)
             match!(μ, m, w)
-            println("she accepts, discarding Man " * string(m_old.id))
+            println("she accepts, discarding " * string(m_old))
             return true
         else
             # Woman prefers existing match
-            println("she rejects, remaining with Man " * string(m_old.id))
+            println("she rejects, remaining with " * string(m_old))
             return false
         end
     else
@@ -110,19 +110,17 @@ function iterate!(g::OneToOneGame)
             w = g.women[w_id]
             propose!(g, m, w)
         else
-            println(" * Man " * string(m.id) * " has no more women to propose to")
+            println(" * " * string(m) * " has no more women to propose to")
         end
     end
 
-    unmatched_men = filter(m -> !ismatched(m, μ), values(g.men))
-    unmatched_men_ids = map(m -> m.id, unmatched_men)
-    unmatched_women = filter(w -> !ismatched(w, μ), values(g.women))
-    unmatched_women_ids = map(w -> w.id, unmatched_women)
+    unmatched_men = collect(filter(m -> !ismatched(m, μ), values(g.men)))
+    unmatched_women = collect(filter(w -> !ismatched(w, μ), values(g.women)))
 
     println("End of round " * string(g.round) * ":")
     println(" * Matches: " * string(g.matches))
-    println(" * Unmatched men: " * string(unmatched_men_ids))
-    println(" * Unmatched women: " * string(unmatched_women_ids))
+    println(" * Unmatched men: " * string(unmatched_men))
+    println(" * Unmatched women: " * string(unmatched_women))
     println()
 end
 

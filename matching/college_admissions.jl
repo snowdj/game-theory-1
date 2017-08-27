@@ -22,12 +22,8 @@ function ManyToOneMatching()
     return ManyToOneMatching(d)
 end
 
-function Base.string(ss::SortedSet{Student, PrefOrdering{College}})
-    ss_ids = [s.id for s in ss]
-    return string(ss_ids)
-end
 function Base.string(μ::ManyToOneMatching)
-    id_pairs = [string(c.id) * "=>" * string(ss) for (c, ss) in μ.d]
+    id_pairs = [string(c.id) * "=>" * string(collect(ss)) for (c, ss) in μ.d]
     return "{" * join(id_pairs, ", ") * "}"
 end
 
@@ -53,7 +49,7 @@ end
 getleastpref(c::College, μ::ManyToOneMatching) = last(μ.d[c])
 
 function match!(μ::ManyToOneMatching, c::College, s::Student)
-    @assert !isfull(c, μ) "College is already full"
+    @assert !isfull(c, μ) (string(c) * " is already full")
     if !haskey(μ.d, c)
         μ.d[c] = SortedSet{Student, PrefOrdering{College}}(PrefOrdering{College}(c))
     end
@@ -61,7 +57,7 @@ function match!(μ::ManyToOneMatching, c::College, s::Student)
 end
 
 function unmatch!(μ::ManyToOneMatching, c::College, s::Student)
-    @assert s in getmatch(c, μ) "College and student are not currently matched"
+    @assert s in getmatch(c, μ) (string(c) * " and " * string(s) * " are not currently matched")
     delete!(μ.d[c], s)
 end
 
@@ -93,7 +89,7 @@ function Base.rand(::Type{ManyToOneGame}, n_students::Int, n_colleges::Int,
 end
 
 function propose!(g::ManyToOneGame, s::Student, c::College)
-    print(" * Student " * string(s.id) * " proposes to College " * string(c.id) * string("... "))
+    print(" * " * string(s) * " proposes to " * string(c) * "... ")
     μ = g.matches
     @assert !ismatched(s, μ)
     @assert s.prefs[g.next_proposals[s]] == c.id
@@ -105,11 +101,11 @@ function propose!(g::ManyToOneGame, s::Student, c::College)
             # College prefers new student
             unmatch!(μ, c, s_old)
             match!(μ, c, s)
-            println("it accepts, discarding Student " * string(s_old.id))
+            println("it accepts, discarding " * string(s_old))
             return true
         else
             # College prefers least-preferred student in existing match
-            println("it rejects, remaining with Student " * string(s_old.id))
+            println("it rejects, remaining with " * string(s_old))
             return false
         end
     else
@@ -132,19 +128,17 @@ function iterate!(g::ManyToOneGame)
             c = g.colleges[c_id]
             propose!(g, s, c)
         else
-            println(" * Student " * string(s.id) * " has no more colleges to propose to")
+            println(" * " * string(s) * " has no more colleges to propose to")
         end
     end
 
-    unmatched_students = filter(s -> !ismatched(s, μ), values(g.students))
-    unmatched_student_ids = map(s -> s.id, unmatched_students)
-    open_colleges = filter(c -> !isfull(c, μ), values(g.colleges))
-    open_college_ids = map(c -> c.id, open_colleges)
+    unmatched_students = collect(filter(s -> !ismatched(s, μ), values(g.students)))
+    open_colleges = collect(filter(c -> !isfull(c, μ), values(g.colleges)))
 
     println("End of round " * string(g.round) * ":")
     println(" * Matches: " * string(g.matches))
-    println(" * Unmatched students: " * string(unmatched_student_ids))
-    println(" * Colleges with seats available: " * string(open_college_ids))
+    println(" * Unmatched students: " * string(unmatched_students))
+    println(" * Colleges with seats available: " * string(open_colleges))
     println()
 end
 
