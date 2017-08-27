@@ -45,16 +45,16 @@ end
 function match!(μ::OneToOneMatching, m::Man, w::Woman)
     @assert !ismatched(m, μ) (string(m) * " is already matched")
     @assert !ismatched(w, μ) (string(w) * " is already matched")
-    delete!(μ.unmatched_men, m)
-    delete!(μ.unmatched_women, m)
     μ.d[m] = w
+    delete!(μ.unmatched_men, m)
+    delete!(μ.unmatched_women, w)
 end
 
 function unmatch!(μ::OneToOneMatching, m::Man, w::Woman)
     @assert getmatch(m, μ) == w (string(m) * " and " * string(w) * " are not currently matched")
-    delete!(μ.d, m)
     push!(μ.unmatched_men, m)
     push!(μ.unmatched_women, w)
+    delete!(μ.d, m)
 end
 
 type OneToOneGame <: Game

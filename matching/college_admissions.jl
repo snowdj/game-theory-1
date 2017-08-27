@@ -59,17 +59,17 @@ function match!(μ::ManyToOneMatching, c::College, s::Student)
     if !haskey(μ.d, c)
         μ.d[c] = SortedSet{Student, PrefOrdering{College}}(PrefOrdering{College}(c))
     end
-    delete!(μ.unmatched_students, s)
-    delete!(μ.unmatched_colleges, c)
     insert!(μ.d[c], s)
+    delete!(μ.unmatched_students, s)
+    ismatched(c, μ) && delete!(μ.unmatched_colleges, c)
 end
 match!(μ::ManyToOneMatching, s::Student, c::College) = match!(μ, c, s)
 
 function unmatch!(μ::ManyToOneMatching, c::College, s::Student)
     @assert s in getmatch(c, μ) (string(c) * " and " * string(s) * " are not currently matched")
-    delete!(μ.d[c], s)
     push!(μ.unmatched_students, s)
     push!(μ.unmatched_colleges, c)
+    delete!(μ.d[c], s)
 end
 unmatch!(μ::ManyToOneMatching, s::Student, c::College) = unmatch!(μ, c, s)
 
