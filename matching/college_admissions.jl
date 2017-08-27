@@ -91,8 +91,8 @@ end
 function propose!(g::ManyToOneGame, s::Student, c::College)
     print(" * " * string(s) * " proposes to " * string(c) * "... ")
     μ = g.matches
-    @assert !ismatched(s, μ)
-    @assert s.prefs[g.next_proposals[s]] == c.id
+    @assert !ismatched(s, μ) (string(s) * " is already matched")
+    @assert s.prefs[g.next_proposals[s]] == c.id (string(c) * " is not " * string(s) * "'s most-preferred remaining college")
     g.next_proposals[s] += 1
 
     if isfull(c, μ)

@@ -73,8 +73,8 @@ end
 function propose!(g::OneToOneGame, m::Man, w::Woman)
     print(" * " * string(m) * " proposes to " * string(w) * "... ")
     μ = g.matches
-    @assert !ismatched(m, μ)
-    @assert m.prefs[g.next_proposals[m]] == w.id
+    @assert !ismatched(m, μ) (string(m) * " is already matched")
+    @assert m.prefs[g.next_proposals[m]] == w.id (string(w) * " is not " * string(m) * "'s most-preferred remaining woman")
     g.next_proposals[m] += 1
 
     if ismatched(w, μ)
