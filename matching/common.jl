@@ -35,3 +35,43 @@ function play!(g::Game)
         iterate!(g)
     end
 end
+
+function ispairstable(g::Game)
+    if isa(g, OneToOneGame)
+        side1 = g.men
+        side2 = g.women
+        mymatch = getmatch
+        pronoun = "his"
+    elseif isa(g, ManyToOneGame)
+        side1 = g.colleges
+        side2 = g.students
+        pronoun = "its"
+        mymatch = getleastpref
+    end
+
+    μ = g.matches
+
+    for p in values(side1)
+        for q in values(side2)
+            if (!ismatched(p, μ) || prefers(p, q, mymatch(p, μ))) &&
+                (!ismatched(q, μ) || prefers(q, p, getmatch(q, μ)))
+
+                println("Blocking pair: ")
+
+                print(" * " * string(p))
+                !ismatched(p, μ) ? println(" is unmatched") :
+                    println(" prefers " * string(q) * "to " * pronoun * " match, " * string(getmatch(p, μ)))
+
+                print(" * " * string(q))
+                !ismatched(q, μ) ? println(" is unmatched") :
+                    println(" prefers " * string(p) * "to her match, " * string(getmatch(q, μ)))
+                println()
+                return false
+            end
+        end
+    end
+
+    println("No blocking pairs")
+    println()
+    return true
+end

@@ -3,7 +3,7 @@ module Matching
 using DataStructures: OrderedDict, OrderedSet, SortedSet
 
 export
-    ismatched, getmatch, propose!, iterate!, play!,
+    ismatched, getmatch, propose!, iterate!, play!, ispairstable,
 
     # Stable marriage
     Man, Woman, OneToOneMatching, OneToOneGame,
