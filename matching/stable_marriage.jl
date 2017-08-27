@@ -12,8 +12,13 @@ end
 
 type OneToOneMatching <: AbstractMatching
     d::OrderedDict{Man, Woman}
+    unmatched_men::OrderedSet{Man}
+    unmatched_women::OrderedSet{Woman}
 end
-OneToOneMatching() = OneToOneMatching(OrderedDict{Man, Woman}())
+function OneToOneMatching(men::OrderedSet{Man}, women::OrderedSet{Woman})
+    d = OrderedDict{Man, Woman}()
+    return OneToOneMatching(d, men, women)
+end
 
 function Base.string(μ::OneToOneMatching)
     id_pairs = [string(m.id) * "=>" * string(w.id) for (m, w) in μ.d]
@@ -40,12 +45,16 @@ end
 function match!(μ::OneToOneMatching, m::Man, w::Woman)
     @assert !ismatched(m, μ) (string(m) * " is already matched")
     @assert !ismatched(w, μ) (string(w) * " is already matched")
+    delete!(μ.unmatched_men, m)
+    delete!(μ.unmatched_women, m)
     μ.d[m] = w
 end
 
 function unmatch!(μ::OneToOneMatching, m::Man, w::Woman)
     @assert getmatch(m, μ) == w (string(m) * " and " * string(w) * " are not currently matched")
     delete!(μ.d, m)
+    push!(μ.unmatched_men, m)
+    push!(μ.unmatched_women, w)
 end
 
 type OneToOneGame <: Game
@@ -67,7 +76,7 @@ function Base.rand(::Type{OneToOneGame}, n_men::Int, n_women::Int)
         women[j] = Woman(j, randperm(n_men))
     end
 
-    matches = OneToOneMatching()
+    matches = OneToOneMatching(OrderedSet(values(men)), OrderedSet(values(women)))
     next_proposals = OrderedDict(m => 1 for m in values(men))
 
     return OneToOneGame(0, men, women, matches, next_proposals)
@@ -106,8 +115,9 @@ function iterate!(g::OneToOneGame)
     println("Start of round " * string(g.round) * ":")
     μ = g.matches
 
-    unmatched_men = filter(m -> !ismatched(m, μ), values(g.men))
-    for m in unmatched_men
+    # Need to copy, or else we'd be iterating through a set as some elements are
+    # being deleted by `match!`
+    for m in copy(μ.unmatched_men)
         if can_propose(m, g)
             w_id = m.prefs[g.next_proposals[m]]
             w = g.women[w_id]
@@ -117,13 +127,10 @@ function iterate!(g::OneToOneGame)
         end
     end
 
-    unmatched_men = collect(filter(m -> !ismatched(m, μ), values(g.men)))
-    unmatched_women = collect(filter(w -> !ismatched(w, μ), values(g.women)))
-
     println("End of round " * string(g.round) * ":")
     println(" * Matches: " * string(g.matches))
-    println(" * Unmatched men: " * string(unmatched_men))
-    println(" * Unmatched women: " * string(unmatched_women))
+    println(" * Unmatched men: " * string(μ.unmatched_men))
+    println(" * Unmatched women: " * string(μ.unmatched_women))
     println()
 end
 
@@ -135,10 +142,8 @@ end
 function isdone(g::OneToOneGame)
     μ = g.matches
 
-    all_matched = all(m -> ismatched(m, μ), values(g.men))
-
-    unmatched_men = filter(m -> !ismatched(m, μ), values(g.men))
-    no_proposals = all(m -> !can_propose(m, g), unmatched_men)
+    all_matched = isempty(μ.unmatched_men)
+    no_proposals = all(m -> !can_propose(m, g), μ.unmatched_men)
 
     return all_matched || no_proposals
 end

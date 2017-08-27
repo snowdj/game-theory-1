@@ -8,11 +8,11 @@ function Base.string{A<:Agent}(a::A)
     typename = replace(string(A), "Matching.", "")
     return typename * " " * string(a.id)
 end
-
 function Base.string{A<:Agent}(agents::Vector{A})
     agent_ids = map(a -> a.id, agents)
     isempty(agent_ids) ? "∅" : string(agent_ids)
 end
+Base.string{A<:Agent}(agents::OrderedSet{A}) = string(collect(agents))
 
 abstract AbstractMatching
 

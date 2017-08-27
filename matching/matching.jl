@@ -1,6 +1,6 @@
 module Matching
 
-using DataStructures: OrderedDict, SortedSet
+using DataStructures: OrderedDict, OrderedSet, SortedSet
 
 export
     ismatched, getmatch, propose!, iterate!, play!,
