@@ -20,9 +20,8 @@ type UnmatchedError <: Exception end
 
 abstract Game
 
-function prefers(w::Agent, m1::Agent, m2::Agent)
+function prefers{A<:Agent, B<:Agent}(w::A, m1::B, m2::B)
     @assert typeof(w) != typeof(m1)
-    @assert typeof(m1) == typeof(m2)
     return findfirst(w.prefs, m1.id) < findfirst(w.prefs, m2.id)
 end
 
