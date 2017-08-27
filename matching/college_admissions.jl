@@ -106,18 +106,18 @@ function propose!{A<:ManyToOneAgent, B<:ManyToOneAgent}(g::ManyToOneGame{A},
     @assert typeof(p) != typeof(q) (string(p) * " and " * string(q) * " cannot be of the same type")
 
     if A == Student
-        proposee_string = "college"
-        pronoun_string = "it"
+        proposee = "college"
+        pronoun = "it"
         leastmatch = getleastpref
     elseif A == College
-        proposee_string = "student"
-        pronoun_string = "she"
+        proposee = "student"
+        pronoun = "she"
         leastmatch = getmatch
     end
 
     μ = g.matches
     @assert !ismatched(p, μ) (string(p) * " is already matched")
-    @assert p.prefs[g.next_proposals[p]] == q.id (string(q) * " is not " * string(p) * "'s most-preferred remaining " * proposee_string)
+    @assert p.prefs[g.next_proposals[p]] == q.id (string(q) * " is not " * string(p) * "'s most-preferred remaining " * proposee)
     g.next_proposals[p] += 1
 
     if ismatched(q, μ)
@@ -126,17 +126,17 @@ function propose!{A<:ManyToOneAgent, B<:ManyToOneAgent}(g::ManyToOneGame{A},
             # Proposee prefers new proposer
             unmatch!(μ, p_old, q)
             match!(μ, p, q)
-            println(pronoun_string * " accepts, discarding " * string(p_old))
+            println(pronoun * " accepts, discarding " * string(p_old))
             return true
         else
             # Proposee prefers existing match(es)
-            println(pronoun_string * " rejects, remaining with " * string(p_old))
+            println(pronoun * " rejects, remaining with " * string(p_old))
             return false
         end
     else
         # Proposee accepts proposal
         match!(μ, p, q)
-        println(pronoun_string * " accepts")
+        println(pronoun * " accepts")
         return true
     end
 end
